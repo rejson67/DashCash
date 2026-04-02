@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DashCash - Zarabiaj przez reklamy</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .yellow-glow { box-shadow: 0 0 20px rgba(250, 204, 21, 0.2); }
+        body { background-color: #09090b; }
+    </style>
+</head>
+<body class="text-white min-h-screen font-sans flex items-center justify-center p-4">
+
+    <div id="app" class="w-full max-w-md">
+        <!-- Logo / Header -->
+        <div class="text-center mb-8">
+            <h1 class="text-4xl font-black italic tracking-tighter text-yellow-400">DASHCASH</h1>
+            <p class="text-zinc-500 text-sm font-bold uppercase tracking-widest mt-1">Szybka Kasa • 2 Kliknięcia</p>
+        </div>
+
+        <!-- EKRAN LOGOWANIA / REJESTRACJI -->
+        <div id="auth-screen" class="bg-zinc-900 p-8 rounded-3xl border border-zinc-800 yellow-glow">
+            <div class="space-y-4">
+                <h2 class="text-xl font-bold text-center mb-6">Zaloguj się, aby zbierać punkty</h2>
+                <input id="email" type="email" placeholder="E-mail" class="w-full p-4 bg-black border border-zinc-800 rounded-2xl focus:border-yellow-400 outline-none transition-all">
+                <input id="password" type="password" placeholder="Hasło" class="w-full p-4 bg-black border border-zinc-800 rounded-2xl focus:border-yellow-400 outline-none transition-all">
+                
+                <div class="pt-4 space-y-3">
+                    <button onclick="handleAuth('login')" class="w-full py-4 bg-yellow-400 text-black font-black rounded-2xl hover:bg-yellow-300 transition-all transform active:scale-95">ZALOGUJ SIĘ</button>
+                    <button onclick="handleAuth('signup')" class="w-full py-4 text-zinc-500 font-bold hover:text-white transition-all">STWÓRZ NOWE KONTO</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- EKRAN GŁÓWNY (PO ZALOGOWANIU) -->
+        <div id="main-screen" class="hidden">
+            <div class="bg-zinc-900 p-10 rounded-3xl border-2 border-yellow-400/10 text-center yellow-glow">
+                <p class="text-zinc-500 font-bold uppercase text-xs tracking-widest mb-2">Twój aktualny balans</p>
+                <div class="flex items-center justify-center gap-2 mb-8">
+                    <span id="total-points" class="text-7xl font-black text-yellow-400">0</span>
+                    <span class="text-yellow-400/50 font-bold">PTS</span>
+                </div>
+                
+                <button onclick="earnPoints()" class="w-full py-6 bg-yellow-400 text-black font-black text-xl rounded-2xl shadow-[0_8px_0_rgb(202,138,4)] active:translate-y-1 active:shadow-none transition-all">
+                    ZARÓB +10 PUNKTÓW ⚡
+                </button>
+
+                <div class="mt-8 pt-8 border-t border-zinc-800 flex justify-between items-center">
+                    <span id="user-display" class="text-zinc-600 text-xs truncate max-w-[150px]"></span>
+                    <button onclick="logout()" class="text-zinc-500 hover:text-red-500 text-xs font-bold uppercase">Wyloguj</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- TWOJE DANE DO WPISANIA ---
+        const SB_URL = "https://owhmbzsrtpwukfhatuvm.supabase.co";
+        const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im93aG1ienNydHB3dWtmaGF0dXZtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxMzM0NjcsImV4cCI6MjA5MDcwOTQ2N30.khUoKMLvuPmsqTkGve9zkfZWB-AxDlaLm5Hp57LtkIo";
+        const MONETAG_LINK = "TWÓJ_SMARTLINK_Z_MONETAG";
+        // ------------------------------
+
+        const sb = supabase.createClient(SB_URL, SB_KEY);
+
+        async function handleAuth(type) {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            if(!email || !password) return alert("Wpisz dane!");
+
+            let res;
+            if (type === 'login') res = await sb.auth.signInWithPassword({ email, password });
+            else res = await sb.auth.signUp({ email, password });
+
+            if (res.error) alert("Błąd: " + res.error.message);
+            else checkSession();
+        }
+
+        async function checkSession() {
+            const { data: { session } } = await sb.auth.getSession();
+            if (session) {
+                document.getElementById('auth-screen').style.display = 'none';
+                document.getElementById('main-screen').style.display = 'block';
+                document.getElementById('user-display').innerText = session.user.email;
+                refreshPoints(session.user.id);
+            }
+        }
+
+        async function refreshPoints(userId) {
+            const { data, error } = await sb.from('profiles').select('points').eq('id', userId).single();
+            if (data) {
+                document.getElementById('total-points').innerText = data.points;
+            }
+        }
+
+        async function earnPoints() {
+            const { data: { user } } = await sb.auth.getUser();
+            if (!user) return;
+
+            // Otwórz reklamę
+            window.open(MONETAG_LINK, '_blank');
+
+            // Pobierz aktualne punkty i dodaj 10
+            const { data } = await sb.from('profiles').select('points').eq('id', user.id).single();
+            const currentPoints = data ? data.points : 0;
+            const nextPoints = currentPoints + 10;
+
+            const { error } = await sb.from('profiles').update({ points: nextPoints }).eq('id', user.id);
+            
+            if (error) console.log("Błąd zapisu:", error.message);
+            refreshPoints(user.id);
+        }
+
+        async function logout() {
+            await sb.auth.signOut();
+            window.location.reload();
+        }
+
+        checkSession();
+    </script>
+</body>
+</html>
