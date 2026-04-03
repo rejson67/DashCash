@@ -44,7 +44,7 @@
     <!-- DYNAMICZNY TOAST -->
     <div id="toast" class="toast">
         <span id="toast-icon">💸</span>
-        <span id="toast-text">+ 0.002 zł</span>
+        <span id="toast-text">+ 0.001 zł</span>
     </div>
 
     <div class="w-full max-w-md bg-zinc-950 min-h-screen border-x border-zinc-900 flex flex-col relative overflow-hidden">
@@ -106,7 +106,7 @@
                 </div>
 
                 <button id="earn-btn" onclick="earnMoney()" class="w-full py-6 bg-emerald-500 text-black font-black text-xl rounded-2xl mb-8 shadow-[0_10px_30px_rgba(16,185,129,0.25)] hover:scale-[1.02] active:scale-95 transition-all flex justify-center items-center gap-2">
-                    <span>ZARÓB 0.002 ZŁ</span>
+                    <span>ZARÓB 0.001 ZŁ</span>
                 </button>
 
                 <!-- Symulacja wypłat -->
@@ -162,7 +162,7 @@
                     <p class="text-zinc-400 text-sm max-w-[200px] mx-auto mb-6 z-10">Klikaj bez limitu. Każde kliknięcie generuje zysk i uruchamia reklamy.</p>
                     
                     <div class="px-6 py-3 bg-black border border-emerald-500/30 rounded-full text-emerald-500 text-sm font-black uppercase tracking-widest shadow-inner z-10">
-                        + 0.002 PLN / KLIK
+                        + 0.001 PLN / KLIK
                     </div>
                 </div>
             </div>
@@ -180,7 +180,7 @@
                 <h3 class="text-2xl font-black mb-6 text-white tracking-tight">Zasady & Pomoc</h3>
                 <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 mb-8">
                     <ul class="text-sm text-zinc-400 space-y-4 font-medium">
-                        <li class="flex gap-3"><span class="text-emerald-500">✓</span> <span>Jedno kliknięcie to zarobek <strong class="text-white">0.002 zł</strong>.</span></li>
+                        <li class="flex gap-3"><span class="text-emerald-500">✓</span> <span>Jedno kliknięcie to zarobek <strong class="text-white">0.001 zł</strong>.</span></li>
                         <li class="flex gap-3"><span class="text-red-500">✖</span> <span>Używanie botów, auto-klikerów lub VPN grozi blokadą konta.</span></li>
                         <li class="flex gap-3"><span class="text-emerald-500">✓</span> <span>Wypłaty zatwierdzane są ręcznie w ciągu 48 godzin.</span></li>
                         <li class="flex gap-3"><span class="text-red-500">✖</span> <span>Korzystanie z AdBlocka blokuje możliwość zarabiania.</span></li>
@@ -274,7 +274,7 @@
         async function updateUI(userId) {
             const { data } = await sb.from('profiles').select('points').eq('id', userId).single();
             const points = data ? data.points : 0;
-            currentBalance = points * 0.002;
+            currentBalance = points * 0.001;
             
             // Formatowanie np. 1.250 zł
             const formatted = currentBalance.toFixed(3) + " zł";
@@ -361,7 +361,7 @@
             await sb.from('profiles').update({ points: nextPoints }).eq('id', user.id);
             await sb.from('transactions').insert([{ user_id: user.id, amount: 0.002, type: 'bonus-multitag' }]);
             
-            showToast("+ 0.002 zł", "success", "🚀");
+            showToast("+ 0.001 zł", "success", "🚀");
             updateUI(user.id);
         }
 
