@@ -59,11 +59,19 @@
                 <p class="text-zinc-500 text-sm">Zaloguj się lub stwórz konto.</p>
             </div>
             <div class="space-y-4">
-                <input id="email" type="email" placeholder="Adres e-mail" class="w-full p-4 bg-zinc-900 border border-zinc-800 rounded-xl focus:border-emerald-500 outline-none text-white">
-                <input id="password" type="password" placeholder="Hasło" class="w-full p-4 bg-zinc-900 border border-zinc-800 rounded-xl focus:border-emerald-500 outline-none text-white">
-                <button onclick="handleAuth('login')" class="w-full py-4 bg-emerald-500 text-black font-black rounded-xl">ZALOGUJ SIĘ</button>
-                <button onclick="handleAuth('signup')" class="w-full py-4 text-zinc-500 font-bold hover:text-white">UTWÓRZ KONTO</button>
-            </div>
+    <input id="email" type="email" placeholder="Adres e-mail" class="w-full p-4 bg-zinc-900 border border-zinc-800 rounded-xl focus:border-emerald-500 outline-none text-white">
+    <input id="password" type="password" placeholder="Hasło" class="w-full p-4 bg-zinc-900 border border-zinc-800 rounded-xl focus:border-emerald-500 outline-none text-white">
+    <button onclick="handleAuth('login')" class="w-full py-4 bg-emerald-500 text-black font-black rounded-xl">ZALOGUJ SIĘ</button>
+    <button onclick="handleAuth('signup')" class="w-full py-4 text-zinc-500 font-bold hover:text-white">UTWÓRZ KONTO</button>
+    
+    <div class="social-auth border-t border-zinc-800 pt-4 mt-2 text-center">
+        <p class="text-zinc-500 text-xs mb-3 font-bold uppercase">Lub zaloguj się przez:</p>
+        <button onclick="signInWithGoogle()" id="google-login-btn" class="w-full py-3 bg-white text-black font-black rounded-xl flex items-center justify-center gap-2 hover:bg-zinc-200 transition-colors">
+            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/layout/google.svg" width="18" alt="Google">
+            GOOGLE
+        </button>
+    </div>
+</div>
         </div>
 
         <!-- EKRANY GŁÓWNE -->
@@ -276,6 +284,20 @@
 
             if (res.error) showToast(res.error.message, "error", "✖");
             else checkSession();
+        }
+        // === LOGOWANIE GOOGLE ===
+        async function signInWithGoogle() {
+            const { data, error } = await sb.auth.signInWithOAuth({
+                provider: 'google',
+                options: {
+                    queryParams: {
+                        access_type: 'offline',
+                        prompt: 'consent',
+                    },
+                },
+            });
+
+            if (error) showToast("Błąd logowania Google", "error", "✖");
         }
 
         async function checkSession() {
