@@ -65,6 +65,7 @@
             <nav class="flex border-b border-zinc-900 text-sm font-bold text-zinc-500">
                 <button onclick="switchTab('dashboard')" id="tab-dashboard" class="tab-btn active flex-1 py-4 hover:text-white transition-colors">Zarobki</button>
                 <button onclick="switchTab('payouts')" id="tab-payouts" class="tab-btn flex-1 py-4 hover:text-white transition-colors">Wypłata</button>
+                <button onclick="switchTab('bonus')" id="tab-bonus" class="tab-btn flex-1 py-4 hover:text-white transition-colors">Bonus ⚡</button>
                 <button onclick="switchTab('history')" id="tab-history" class="tab-btn flex-1 py-4 hover:text-white transition-colors">Historia</button>
                 <button onclick="switchTab('rules')" id="tab-rules" class="tab-btn flex-1 py-4 hover:text-white transition-colors">Zasady</button>
             </nav>
@@ -106,7 +107,27 @@
                     </div>
                 </div>
             </div>
+<!-- ZAKŁADKA: BONUS (Bez limitu) -->
+<div id="content-bonus" class="hidden p-6 flex-1 flex flex-col">
+    <div class="bg-emerald-500/10 border border-emerald-500/20 p-4 rounded-xl mb-6">
+        <h3 class="text-emerald-500 font-bold flex items-center gap-2">
+            <span>⚡</span> STREFA BEZ LIMITU
+        </h3>
+        <p class="text-xs text-zinc-400 mt-1">Tutaj nie ma odliczania. Każde kliknięcie w panel poniżej to reklama i zysk.</p>
+    </div>
 
+    <!-- Panel "Pułapka na kliknięcia" -->
+    <div onclick="fastEarn()" class="flex-1 bg-zinc-900 border-2 border-dashed border-zinc-800 rounded-3xl flex flex-col items-center justify-center p-8 text-center cursor-pointer hover:border-emerald-500/50 transition-all group">
+        <div class="w-20 h-20 bg-emerald-500 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-[0_0_30px_rgba(16,185,129,0.2)]">
+            <span class="text-3xl">💸</span>
+        </div>
+        <h4 class="font-black text-xl mb-2 italic">KLIKAJ I ZARABIAJ</h4>
+        <p class="text-zinc-500 text-sm">Kliknij gdziekolwiek w tym polu,<br>aby otworzyć reklamę</p>
+        <div class="mt-6 px-4 py-2 bg-black rounded-full text-emerald-500 text-xs font-bold uppercase tracking-widest">
+            + 0.002 PLN / KLIK
+        </div>
+    </div>
+</div>
             <!-- ZAKŁADKA 2: WYPŁATY -->
             <div id="content-payouts" class="hidden p-6 flex-1 flex flex-col">
                 <h3 class="text-xl font-bold mb-4 text-white">Zleć Wypłatę</h3>
