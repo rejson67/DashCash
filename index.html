@@ -3,75 +3,180 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DashCash - Zarabiaj przez reklamy</title>
+    <title>DashCash - Platforma Zarobkowa</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Tu wklej skrypt MultiTag z Monetag jeśli masz -->
     <style>
-        .yellow-glow { box-shadow: 0 0 20px rgba(250, 204, 21, 0.2); }
-        body { background-color: #09090b; }
+        body { background-color: #050505; color: #f4f4f5; }
+        .tab-btn.active { color: #10b981; border-bottom: 2px solid #10b981; }
+        .toast {
+            position: fixed; top: 20px; right: -100%; background: #10b981; color: #000;
+            padding: 10px 20px; border-radius: 8px; font-weight: bold;
+            transition: right 0.4s ease-in-out; z-index: 50; box-shadow: 0 4px 12px rgba(16,185,129,0.3);
+        }
+        .toast.show { right: 20px; }
+        /* Klasy pułapki na AdBlocka */
+        .ad-banner, .pub_300x250, .text-ad { position: absolute; left: -9999px; width: 1px; height: 1px; }
     </style>
 </head>
-<body class="text-white min-h-screen font-sans flex items-center justify-center p-4">
+<body class="font-sans antialiased min-h-screen flex justify-center">
 
-    <div id="app" class="w-full max-w-md">
-        <!-- Logo / Header -->
-        <div class="text-center mb-8">
-            <h1 class="text-4xl font-black italic tracking-tighter text-yellow-400">DASHCASH</h1>
-            <p class="text-zinc-500 text-sm font-bold uppercase tracking-widest mt-1">Szybka Kasa • 2 Kliknięcia</p>
-        </div>
+    <!-- EKRAN BLOKADY ADBLOCKA -->
+    <div id="adblock-screen" class="hidden fixed inset-0 bg-zinc-950 z-[100] flex flex-col items-center justify-center p-6 text-center">
+        <h1 class="text-4xl font-black text-red-500 mb-4">Wykryto AdBlocka</h1>
+        <p class="text-zinc-400 mb-8 max-w-md">DashCash dzieli się z Tobą zyskami z reklam. Aby zarabiać, musisz wyłączyć blokowanie reklam dla tej strony i odświeżyć.</p>
+        <button onclick="window.location.reload()" class="bg-emerald-500 text-black px-8 py-3 rounded-xl font-bold">Odśwież stronę</button>
+    </div>
 
-        <!-- EKRAN LOGOWANIA / REJESTRACJI -->
-        <div id="auth-screen" class="bg-zinc-900 p-8 rounded-3xl border border-zinc-800 yellow-glow">
+    <!-- PUŁAPKA NA ADBLOCKA (Nie usuwać) -->
+    <div class="ad-banner" id="test-ad">Reklama</div>
+
+    <div id="toast" class="toast">+ 0.002 zł</div>
+
+    <div class="w-full max-w-md bg-zinc-950 min-h-screen border-x border-zinc-900 flex flex-col relative">
+        
+        <!-- NAGŁÓWEK -->
+        <header class="p-6 border-b border-zinc-900 flex justify-between items-center">
+            <div>
+                <h1 class="text-2xl font-black tracking-tight text-white">Dash<span class="text-emerald-500">Cash</span></h1>
+            </div>
+            <div class="flex items-center gap-2">
+                <div class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                <span class="text-xs text-zinc-400 font-medium uppercase tracking-wider">System Online</span>
+            </div>
+        </header>
+
+        <!-- EKRAN LOGOWANIA -->
+        <div id="auth-screen" class="p-6 flex-1 flex flex-col justify-center">
+            <h2 class="text-xl font-bold mb-6 text-center">Zaloguj się do panelu</h2>
             <div class="space-y-4">
-                <h2 class="text-xl font-bold text-center mb-6">Zaloguj się, aby zbierać punkty</h2>
-                <input id="email" type="email" placeholder="E-mail" class="w-full p-4 bg-black border border-zinc-800 rounded-2xl focus:border-yellow-400 outline-none transition-all">
-                <input id="password" type="password" placeholder="Hasło" class="w-full p-4 bg-black border border-zinc-800 rounded-2xl focus:border-yellow-400 outline-none transition-all">
-                
-                <div class="pt-4 space-y-3">
-                    <button onclick="handleAuth('login')" class="w-full py-4 bg-yellow-400 text-black font-black rounded-2xl hover:bg-yellow-300 transition-all transform active:scale-95">ZALOGUJ SIĘ</button>
-                    <button onclick="handleAuth('signup')" class="w-full py-4 text-zinc-500 font-bold hover:text-white transition-all">STWÓRZ NOWE KONTO</button>
-                </div>
+                <input id="email" type="email" placeholder="Adres e-mail" class="w-full p-4 bg-zinc-900 border border-zinc-800 rounded-xl focus:border-emerald-500 outline-none transition-colors">
+                <input id="password" type="password" placeholder="Hasło" class="w-full p-4 bg-zinc-900 border border-zinc-800 rounded-xl focus:border-emerald-500 outline-none transition-colors">
+                <button onclick="handleAuth('login')" class="w-full py-4 bg-emerald-500 text-black font-black rounded-xl hover:bg-emerald-400 transition-colors">ZALOGUJ SIĘ</button>
+                <button onclick="handleAuth('signup')" class="w-full py-4 text-zinc-500 font-bold hover:text-white transition-colors">UTWÓRZ KONTO</button>
             </div>
         </div>
 
-        <!-- EKRAN GŁÓWNY (PO ZALOGOWANIU) -->
-        <div id="main-screen" class="hidden">
-            <div class="bg-zinc-900 p-10 rounded-3xl border-2 border-yellow-400/10 text-center yellow-glow">
-                <p class="text-zinc-500 font-bold uppercase text-xs tracking-widest mb-2">Twój aktualny balans</p>
-                <div class="flex items-center justify-center gap-2 mb-8">
-                    <span id="total-points" class="text-7xl font-black text-yellow-400">0</span>
-                    <span class="text-yellow-400/50 font-bold">PTS</span>
+        <!-- EKRAN GŁÓWNY (ZAKŁADKI) -->
+        <div id="main-screen" class="hidden flex-1 flex flex-col">
+            
+            <!-- NAWIGACJA -->
+            <nav class="flex border-b border-zinc-900 text-sm font-bold text-zinc-500">
+                <button onclick="switchTab('dashboard')" id="tab-dashboard" class="tab-btn active flex-1 py-4 hover:text-white transition-colors">Zarobki</button>
+                <button onclick="switchTab('payouts')" id="tab-payouts" class="tab-btn flex-1 py-4 hover:text-white transition-colors">Wypłata</button>
+                <button onclick="switchTab('history')" id="tab-history" class="tab-btn flex-1 py-4 hover:text-white transition-colors">Historia</button>
+                <button onclick="switchTab('rules')" id="tab-rules" class="tab-btn flex-1 py-4 hover:text-white transition-colors">Zasady</button>
+            </nav>
+
+            <!-- ZAKŁADKA 1: DASHBOARD -->
+            <div id="content-dashboard" class="p-6 flex-1 flex flex-col">
+                <div class="bg-zinc-900 p-6 rounded-2xl border border-zinc-800 text-center mb-6">
+                    <p class="text-zinc-400 text-xs uppercase tracking-widest font-bold mb-2">Twój Portfel</p>
+                    <h2 id="balance-display" class="text-5xl font-black text-emerald-500 mb-1 transition-all">0.000 zł</h2>
+                    
+                    <!-- Pasek postępu -->
+                    <div class="mt-6 text-left">
+                        <div class="flex justify-between text-xs text-zinc-500 mb-2 font-bold">
+                            <span>Cel: Wypłata (5.00 zł)</span>
+                            <span id="progress-text">0%</span>
+                        </div>
+                        <div class="w-full bg-zinc-950 rounded-full h-3 border border-zinc-800 p-0.5">
+                            <div id="progress-bar" class="bg-emerald-500 h-full rounded-full" style="width: 0%; transition: width 0.5s ease-in-out;"></div>
+                        </div>
+                    </div>
                 </div>
-                
-                <button onclick="earnPoints()" class="w-full py-6 bg-yellow-400 text-black font-black text-xl rounded-2xl shadow-[0_8px_0_rgb(202,138,4)] active:translate-y-1 active:shadow-none transition-all">
-                    ZARÓB +10 PUNKTÓW ⚡
+
+                <button id="earn-btn" onclick="earnMoney()" class="w-full py-6 bg-emerald-500 text-black font-black text-xl rounded-2xl mb-8 shadow-[0_4px_20px_rgba(16,185,129,0.2)] active:scale-95 transition-all">
+                    ZARÓB 0.002 ZŁ
                 </button>
 
-                <div class="mt-8 pt-8 border-t border-zinc-800 flex justify-between items-center">
-                    <span id="user-display" class="text-zinc-600 text-xs truncate max-w-[150px]"></span>
-                    <button onclick="logout()" class="text-zinc-500 hover:text-red-500 text-xs font-bold uppercase">Wyloguj</button>
+                <!-- Symulacja wypłat dla zaufania -->
+                <div class="mt-auto">
+                    <p class="text-xs text-zinc-500 font-bold uppercase mb-3">Ostatnie Wypłaty w Systemie</p>
+                    <div class="space-y-2 text-sm">
+                        <div class="flex justify-between p-3 bg-zinc-900 rounded-lg border border-zinc-800">
+                            <span class="text-zinc-300">Michał S.</span>
+                            <span class="text-emerald-500 font-bold">5.20 zł</span>
+                        </div>
+                        <div class="flex justify-between p-3 bg-zinc-900 rounded-lg border border-zinc-800">
+                            <span class="text-zinc-300">Kamil_99</span>
+                            <span class="text-emerald-500 font-bold">12.80 zł</span>
+                        </div>
+                    </div>
                 </div>
             </div>
+
+            <!-- ZAKŁADKA 2: WYPŁATY -->
+            <div id="content-payouts" class="hidden p-6 flex-1 flex flex-col">
+                <h3 class="text-xl font-bold mb-4 text-white">Zleć Wypłatę</h3>
+                <p class="text-sm text-zinc-400 mb-6">Wypłaty realizujemy na konta PayPal. Minimum do wypłaty wynosi <span class="text-emerald-500 font-bold">5.00 zł</span>.</p>
+                
+                <div class="space-y-4">
+                    <input id="paypal-email" type="email" placeholder="Twój e-mail PayPal" class="w-full p-4 bg-zinc-900 border border-zinc-800 rounded-xl focus:border-emerald-500 outline-none transition-colors">
+                    <button id="withdraw-btn" onclick="requestWithdrawal()" class="w-full py-4 bg-zinc-800 text-zinc-500 font-black rounded-xl cursor-not-allowed transition-colors" disabled>
+                        BRAK ŚRODKÓW
+                    </button>
+                </div>
+            </div>
+
+            <!-- ZAKŁADKA 3: HISTORIA -->
+            <div id="content-history" class="hidden p-6 flex-1 flex flex-col">
+                <h3 class="text-xl font-bold mb-4 text-white">Historia Transakcji</h3>
+                <div id="history-list" class="space-y-2 overflow-y-auto max-h-[60vh] pr-2">
+                    <p class="text-zinc-500 text-sm">Ładowanie historii...</p>
+                </div>
+            </div>
+
+            <!-- ZAKŁADKA 4: ZASADY -->
+            <div id="content-rules" class="hidden p-6 flex-1 flex flex-col">
+                <h3 class="text-xl font-bold mb-4 text-white">Zasady i Pomoc</h3>
+                <ul class="text-sm text-zinc-400 space-y-3 mb-8 list-disc pl-4">
+                    <li>Jedno kliknięcie to zarobek <span class="text-emerald-500 font-bold">0.002 zł</span>.</li>
+                    <li>Używanie botów, auto-klikerów lub VPN grozi blokadą konta.</li>
+                    <li>Wypłaty zatwierdzane są ręcznie w ciągu 48 godzin od zlecenia.</li>
+                    <li>Korzystanie z AdBlocka blokuje możliwość zarabiania.</li>
+                </ul>
+                <div class="p-4 bg-zinc-900 rounded-xl border border-zinc-800 text-center">
+                    <p class="text-xs text-zinc-500 uppercase font-bold mb-2">Potrzebujesz pomocy?</p>
+                    <a href="https://t.me/rejson67" target="_blank" class="text-emerald-500 font-bold hover:underline">Napisz na Telegram: @rejson67</a>
+                </div>
+                
+                <button onclick="logout()" class="mt-auto py-3 text-red-500 text-sm font-bold uppercase hover:bg-zinc-900 rounded-xl transition-colors">Wyloguj się</button>
+            </div>
+
         </div>
     </div>
 
     <script>
-        // --- TWOJE DANE DO WPISANIA ---
+        // === TWOJE DANE ===
         const SB_URL = "https://xvsmrftetmqdcdkfnkjq.supabase.co";
         const SB_KEY = "sb_publishable_N48aV0Se_Q4RIKzSCAxDJw_9f8y9x12";
         const MONETAG_LINK = "https://omg10.com/4/10822851";
-        // ------------------------------
+        // ==================
 
         const sb = supabase.createClient(SB_URL, SB_KEY);
+        let currentBalance = 0;
+        let isWaiting = false;
+        let sessionClicks = 0;
 
+        // 1. Sprawdzanie AdBlocka
+        setTimeout(() => {
+            const testAd = document.getElementById('test-ad');
+            if(testAd.offsetHeight === 0 || window.getComputedStyle(testAd).display === 'none') {
+                document.getElementById('adblock-screen').classList.remove('hidden');
+            }
+        }, 500);
+
+        // 2. Autoryzacja
         async function handleAuth(type) {
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
             if(!email || !password) return alert("Wpisz dane!");
 
-            let res;
-            if (type === 'login') res = await sb.auth.signInWithPassword({ email, password });
-            else res = await sb.auth.signUp({ email, password });
+            let res = type === 'login' 
+                ? await sb.auth.signInWithPassword({ email, password })
+                : await sb.auth.signUp({ email, password });
 
             if (res.error) alert("Błąd: " + res.error.message);
             else checkSession();
@@ -81,35 +186,154 @@
             const { data: { session } } = await sb.auth.getSession();
             if (session) {
                 document.getElementById('auth-screen').style.display = 'none';
-                document.getElementById('main-screen').style.display = 'block';
-                document.getElementById('user-display').innerText = session.user.email;
-                refreshPoints(session.user.id);
+                document.getElementById('main-screen').style.display = 'flex';
+                updateUI(session.user.id);
             }
         }
 
-        async function refreshPoints(userId) {
-            const { data, error } = await sb.from('profiles').select('points').eq('id', userId).single();
-            if (data) {
-                document.getElementById('total-points').innerText = data.points;
+        // 3. Aktualizacja Interfejsu (Punkty na PLN)
+        async function updateUI(userId) {
+            const { data } = await sb.from('profiles').select('points').eq('id', userId).single();
+            const points = data ? data.points : 0;
+            currentBalance = points * 0.002;
+            
+            // Formatowanie np. 1.250 zł
+            const formatted = currentBalance.toFixed(3) + " zł";
+            document.getElementById('balance-display').innerText = formatted;
+
+            // Pasek postępu
+            let percent = Math.min((currentBalance / 5.0) * 100, 100).toFixed(0);
+            document.getElementById('progress-bar').style.width = percent + "%";
+            document.getElementById('progress-text').innerText = percent + "%";
+
+            // Przycisk wypłaty
+            const withdrawBtn = document.getElementById('withdraw-btn');
+            if(currentBalance >= 5.0) {
+                withdrawBtn.disabled = false;
+                withdrawBtn.innerText = "ZLEĆ WYPŁATĘ TERAZ";
+                withdrawBtn.classList.replace('bg-zinc-800', 'bg-emerald-500');
+                withdrawBtn.classList.replace('text-zinc-500', 'text-black');
             }
         }
 
-        async function earnPoints() {
+        // 4. Zarabianie i Ochrona
+        async function earnMoney() {
+            if (isWaiting) return;
+
+            // Anty-bot co 50 kliknięć
+            if (sessionClicks > 0 && sessionClicks % 50 === 0) {
+                const num1 = Math.floor(Math.random() * 10);
+                const num2 = Math.floor(Math.random() * 10);
+                const ans = prompt(`Zabezpieczenie przed botami: Ile to ${num1} + ${num2}?`);
+                if (parseInt(ans) !== (num1 + num2)) {
+                    alert("Błędna odpowiedź! Odczekaj chwilę.");
+                    return;
+                }
+            }
+
             const { data: { user } } = await sb.auth.getUser();
             if (!user) return;
 
-            // Otwórz reklamę
             window.open(MONETAG_LINK, '_blank');
+            sessionClicks++;
 
-            // Pobierz aktualne punkty i dodaj 10
+            // Cooldown 15s
+            const btn = document.getElementById('earn-btn');
+            isWaiting = true;
+            let timeLeft = 15;
+
+            const timer = setInterval(() => {
+                btn.innerText = `ODCZEKAJ ${timeLeft}s`;
+                btn.classList.replace('bg-emerald-500', 'bg-zinc-800');
+                btn.classList.replace('text-black', 'text-zinc-500');
+                timeLeft--;
+
+                if (timeLeft < 0) {
+                    clearInterval(timer);
+                    isWaiting = false;
+                    btn.innerText = "ZARÓB 0.002 ZŁ";
+                    btn.classList.replace('bg-zinc-800', 'bg-emerald-500');
+                    btn.classList.replace('text-zinc-500', 'text-black');
+                }
+            }, 1000);
+
+            // Zapis w bazie (zwiększamy w profilu i dodajemy do historii)
             const { data } = await sb.from('profiles').select('points').eq('id', user.id).single();
-            const currentPoints = data ? data.points : 0;
-            const nextPoints = currentPoints + 10;
-
-            const { error } = await sb.from('profiles').update({ points: nextPoints }).eq('id', user.id);
+            await sb.from('profiles').update({ points: (data ? data.points : 0) + 1 }).eq('id', user.id);
+            await sb.from('transactions').insert([{ user_id: user.id, amount: 0.002, type: 'earn' }]);
             
-            if (error) console.log("Błąd zapisu:", error.message);
-            refreshPoints(user.id);
+            showToast();
+            updateUI(user.id);
+        }
+
+        // 5. Wypłata
+        async function requestWithdrawal() {
+            const email = document.getElementById('paypal-email').value;
+            if(!email.includes('@')) return alert("Podaj poprawny adres e-mail!");
+            
+            const { data: { user } } = await sb.auth.getUser();
+            
+            await sb.from('withdrawals').insert([{ 
+                user_id: user.id, 
+                amount: currentBalance, 
+                paypal_email: email 
+            }]);
+            
+            // Zerowanie konta
+            await sb.from('profiles').update({ points: 0 }).eq('id', user.id);
+            await sb.from('transactions').insert([{ user_id: user.id, amount: -currentBalance, type: 'withdraw' }]);
+            
+            alert("Zlecenie wypłaty zostało przyjęte! Twoje środki zostały zresetowane.");
+            document.getElementById('paypal-email').value = '';
+            updateUI(user.id);
+        }
+
+        // 6. Pobieranie historii
+        async function loadHistory() {
+            const list = document.getElementById('history-list');
+            list.innerHTML = '<p class="text-zinc-500 text-sm">Ładowanie...</p>';
+            
+            const { data: { user } } = await sb.auth.getUser();
+            const { data } = await sb.from('transactions')
+                                   .select('*')
+                                   .eq('user_id', user.id)
+                                   .order('created_at', { ascending: false })
+                                   .limit(20);
+            
+            list.innerHTML = '';
+            if(data.length === 0) list.innerHTML = '<p class="text-zinc-500 text-sm">Brak transakcji.</p>';
+            
+            data.forEach(t => {
+                const isEarn = t.type === 'earn';
+                const date = new Date(t.created_at).toLocaleString('pl-PL', {hour: '2-digit', minute:'2-digit', day:'2-digit', month:'2-digit'});
+                list.innerHTML += `
+                    <div class="flex justify-between items-center p-3 bg-zinc-900 rounded-lg border border-zinc-800">
+                        <div>
+                            <p class="text-sm text-zinc-300 font-bold">${isEarn ? 'Reklama' : 'Wypłata'}</p>
+                            <p class="text-xs text-zinc-600">${date}</p>
+                        </div>
+                        <span class="font-bold ${isEarn ? 'text-emerald-500' : 'text-red-500'}">
+                            ${isEarn ? '+' : '-'}${Math.abs(t.amount).toFixed(3)} zł
+                        </span>
+                    </div>`;
+            });
+        }
+
+        // UI Helpers
+        function showToast() {
+            const toast = document.getElementById('toast');
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById('tab-' + tabId).classList.add('active');
+            
+            document.querySelectorAll('[id^="content-"]').forEach(c => c.classList.add('hidden'));
+            document.getElementById('content-' + tabId).classList.remove('hidden');
+
+            if(tabId === 'history') loadHistory();
         }
 
         async function logout() {
