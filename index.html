@@ -353,7 +353,27 @@
             toast.classList.add('show');
             setTimeout(() => toast.classList.remove('show'), 3000);
         }
+async function triggerMultiTagEarn() {
+    const { data: { user } } = await sb.auth.getUser();
+    if (!user) return;
 
+    // Pobieramy aktualne punkty
+    const { data } = await sb.from('profiles').select('points').eq('id', user.id).single();
+    const nextPoints = (data ? data.points : 0) + 1; // +1 pkt = +0.002 zł
+
+    // Zapisujemy w bazie
+    await sb.from('profiles').update({ points: nextPoints }).eq('id', user.id);
+    
+    // Zapisujemy w historii jako bonus
+    await sb.from('transactions').insert([{ 
+        user_id: user.id, 
+        amount: 0.002, 
+        type: 'bonus-multitag' 
+    }]);
+    
+    showToast(); // Pokazuje "+0.002 zł" na ekranie
+    updateUI(user.id); // Odświeża licznik PLN na górze
+}
         function switchTab(tabId) {
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             document.getElementById('tab-' + tabId).classList.add('active');
