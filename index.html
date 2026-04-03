@@ -286,10 +286,11 @@
             else checkSession();
         }
         // === LOGOWANIE GOOGLE ===
-        async function signInWithGoogle() {
+                async function signInWithGoogle() {
             const { data, error } = await sb.auth.signInWithOAuth({
                 provider: 'google',
                 options: {
+                    redirectTo: 'https://dash2cash.vercel.app', // <--- TO DODAŁEM
                     queryParams: {
                         access_type: 'offline',
                         prompt: 'consent',
@@ -299,6 +300,7 @@
 
             if (error) showToast("Błąd logowania Google", "error", "✖");
         }
+
 
         async function checkSession() {
             const { data: { session } } = await sb.auth.getSession();
