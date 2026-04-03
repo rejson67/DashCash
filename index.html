@@ -107,27 +107,6 @@
                     </div>
                 </div>
             </div>
-<!-- ZAKŁADKA: BONUS (Bez limitu) -->
-<div id="content-bonus" class="hidden p-6 flex-1 flex flex-col">
-    <div class="bg-emerald-500/10 border border-emerald-500/20 p-4 rounded-xl mb-6">
-        <h3 class="text-emerald-500 font-bold flex items-center gap-2">
-            <span>⚡</span> STREFA BEZ LIMITU
-        </h3>
-        <p class="text-xs text-zinc-400 mt-1">Tutaj nie ma odliczania. Każde kliknięcie w panel poniżej to reklama i zysk.</p>
-    </div>
-
-    <!-- Panel "Pułapka na kliknięcia" -->
-    <div onclick="fastEarn()" class="flex-1 bg-zinc-900 border-2 border-dashed border-zinc-800 rounded-3xl flex flex-col items-center justify-center p-8 text-center cursor-pointer hover:border-emerald-500/50 transition-all group">
-        <div class="w-20 h-20 bg-emerald-500 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-[0_0_30px_rgba(16,185,129,0.2)]">
-            <span class="text-3xl">💸</span>
-        </div>
-        <h4 class="font-black text-xl mb-2 italic">KLIKAJ I ZARABIAJ</h4>
-        <p class="text-zinc-500 text-sm">Kliknij gdziekolwiek w tym polu,<br>aby otworzyć reklamę</p>
-        <div class="mt-6 px-4 py-2 bg-black rounded-full text-emerald-500 text-xs font-bold uppercase tracking-widest">
-            + 0.002 PLN / KLIK
-        </div>
-    </div>
-</div>
             <!-- ZAKŁADKA 2: WYPŁATY -->
             <div id="content-payouts" class="hidden p-6 flex-1 flex flex-col">
                 <h3 class="text-xl font-bold mb-4 text-white">Zleć Wypłatę</h3>
@@ -140,7 +119,35 @@
                     </button>
                 </div>
             </div>
+<!-- ZAKŁADKA: BONUS (Strefa MultiTag) -->
+<div id="content-bonus" class="hidden p-6 flex-1 flex flex-col">
+    
+    <!-- TUTAJ WKLEIŁEM TWÓJ SKRYPT MULTITAG -->
+    <script src="https://quge5.com/88/tag.min.js" data-zone="225950" async data-cfasync="false"></script>
 
+    <div class="bg-emerald-500/10 border border-emerald-500/20 p-4 rounded-xl mb-6 text-center">
+        <h3 class="text-emerald-500 font-bold flex items-center justify-center gap-2">
+            <span>⚡</span> STREFA MULTI-ZAROBKU
+        </h3>
+        <p class="text-[10px] text-zinc-500 mt-1 uppercase tracking-widest font-bold">Reklamy aktywne tylko w tej sekcji</p>
+    </div>
+
+    <!-- Główny panel klikalny -->
+    <div onclick="triggerMultiTagEarn()" class="flex-1 bg-zinc-900 border-2 border-dashed border-zinc-800 rounded-3xl flex flex-col items-center justify-center p-8 text-center cursor-pointer hover:border-emerald-500/50 transition-all group active:scale-95">
+        <div class="w-24 h-24 bg-emerald-500 rounded-full flex items-center justify-center mb-6 group-hover:scale-110 transition-transform shadow-[0_0_40px_rgba(16,185,129,0.3)]">
+            <span class="text-4xl text-black">🚀</span>
+        </div>
+        
+        <h4 class="font-black text-2xl mb-2 text-white uppercase tracking-tighter">KLIKNIJ I ZGARNIJ BONUS</h4>
+        <p class="text-zinc-500 text-sm max-w-[200px] mx-auto mb-6">Każde kliknięcie w to pole nalicza kasę i aktywuje reklamy MultiTag.</p>
+        
+        <div class="px-6 py-3 bg-black border border-emerald-500/30 rounded-full text-emerald-500 text-sm font-black uppercase tracking-widest shadow-inner">
+            + 0.002 PLN / KLIK
+        </div>
+        
+        <p class="mt-8 text-[10px] text-zinc-600 font-bold uppercase">Brak limitu czasu (Cooldown: 0s)</p>
+    </div>
+</div>
             <!-- ZAKŁADKA 3: HISTORIA -->
             <div id="content-history" class="hidden p-6 flex-1 flex flex-col">
                 <h3 class="text-xl font-bold mb-4 text-white">Historia Transakcji</h3>
