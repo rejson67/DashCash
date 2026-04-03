@@ -6,9 +6,13 @@
     <title>DashCash - Platforma Zarobkowa</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Reklama Vignette -->
+    <script>(function(s){s.dataset.zone='10825887',s.src='https://n6wxm.com/vignette.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>
+
     <style>
         body { background-color: #050505; color: #f4f4f5; }
-        .tab-btn { position: relative; transition: all 0.3s ease; }
+        .tab-btn { position: relative; transition: all 0.3s ease; white-space: nowrap; }
         .tab-btn.active { color: #10b981; }
         .tab-btn.active::after { content: ''; position: absolute; bottom: 0; left: 10%; right: 10%; height: 3px; background-color: #10b981; border-radius: 3px 3px 0 0; }
         
@@ -16,246 +20,259 @@
             position: fixed; top: 20px; right: -100%; background: #10b981; color: #000;
             padding: 12px 24px; border-radius: 12px; font-weight: 900;
             transition: right 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 50; 
-            box-shadow: 0 10px 25px rgba(0,0,0,0.5); display: flex; items-center; gap: 8px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5); display: flex; align-items: center; gap: 8px;
         }
         .toast.show { right: 20px; }
-        .toast.error { background: #ef4444; color: white; box-shadow: 0 4px 12px rgba(239,68,68,0.3); }
-        .toast.info { background: #3b82f6; color: white; box-shadow: 0 4px 12px rgba(59,130,246,0.3); }
+        .toast.error { background: #ef4444; color: white; }
+        .toast.info { background: #3b82f6; color: white; }
+        .toast.turbo { background: #f59e0b; color: black; box-shadow: 0 0 20px rgba(245,158,11,0.5); }
         
-        /* Klasy pułapki na AdBlocka */
-        .ad-banner, .pub_300x250, .text-ad { position: absolute; left: -9999px; width: 1px; height: 1px; }
+        /* Chowanie paska przewijania w nawigacji */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
 <body class="font-sans antialiased min-h-screen flex justify-center">
 
-    <!-- EKRAN BLOKADY ADBLOCKA -->
-    <div id="adblock-screen" class="hidden fixed inset-0 bg-zinc-950 z-[100] flex flex-col items-center justify-center p-6 text-center">
-        <div class="w-20 h-20 bg-red-500/10 rounded-full flex items-center justify-center mb-6">
-            <span class="text-4xl">🛡️</span>
-        </div>
-        <h1 class="text-4xl font-black text-red-500 mb-4 tracking-tight">Wykryto AdBlocka</h1>
-        <p class="text-zinc-400 mb-8 max-w-md">DashCash dzieli się z Tobą zyskami z reklam. Aby zarabiać, musisz wyłączyć blokowanie reklam dla tej strony i odświeżyć.</p>
-        <button onclick="window.location.reload()" class="bg-red-500 hover:bg-red-400 text-white px-8 py-4 rounded-xl font-black transition-colors shadow-[0_0_20px_rgba(239,68,68,0.3)]">Odśwież stronę</button>
-    </div>
-
-    <!-- PUŁAPKA NA ADBLOCKA (Nie usuwać) -->
-    <div class="ad-banner" id="test-ad">Reklama</div>
-
-    <!-- DYNAMICZNY TOAST -->
+    <!-- TOAST -->
     <div id="toast" class="toast">
         <span id="toast-icon">💸</span>
-        <span id="toast-text">+ 0.0015 zł</span>
+        <span id="toast-text"></span>
     </div>
 
-    <div class="w-full max-w-md bg-zinc-950 min-h-screen border-x border-zinc-900 flex flex-col relative overflow-hidden">
+    <div class="w-full max-w-md bg-zinc-950 min-h-screen border-x border-zinc-900 flex flex-col relative overflow-hidden pb-20">
         
         <!-- NAGŁÓWEK -->
-        <header class="p-6 border-b border-zinc-900 flex justify-between items-center bg-zinc-950/80 backdrop-blur-md sticky top-0 z-40">
+        <header class="p-4 border-b border-zinc-900 flex justify-between items-center bg-zinc-950/80 backdrop-blur-md sticky top-0 z-40">
             <div>
-                <h1 class="text-2xl font-black tracking-tight text-white">Dash<span class="text-emerald-500">Cash</span></h1>
+                <h1 class="text-xl font-black tracking-tight text-white">Dash<span class="text-emerald-500">Cash</span> <span class="text-xs text-zinc-500 bg-zinc-900 px-2 py-0.5 rounded-full ml-1">v3</span></h1>
             </div>
-            <div class="flex items-center gap-2 px-3 py-1 bg-emerald-500/10 rounded-full border border-emerald-500/20">
-                <div class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
-                <span class="text-[10px] text-emerald-500 font-bold uppercase tracking-wider">System Online</span>
+            <div id="user-level-badge" class="hidden items-center gap-1 px-3 py-1 bg-emerald-500/10 rounded-full border border-emerald-500/20">
+                <span class="text-xs text-emerald-500 font-bold uppercase">LVL <span id="display-level">1</span></span>
             </div>
         </header>
 
         <!-- EKRAN LOGOWANIA -->
         <div id="auth-screen" class="p-6 flex-1 flex flex-col justify-center">
             <div class="text-center mb-8">
-                <h2 class="text-3xl font-black text-white mb-2">Witaj ponownie</h2>
-                <p class="text-zinc-500 text-sm">Zaloguj się, aby kontynuować zarabianie.</p>
+                <h2 class="text-3xl font-black text-white mb-2">Zarabiaj Klikając</h2>
+                <p class="text-zinc-500 text-sm">Zaloguj się lub stwórz konto.</p>
             </div>
             <div class="space-y-4">
-                <input id="email" type="email" placeholder="Adres e-mail" class="w-full p-4 bg-zinc-900 border border-zinc-800 rounded-xl focus:border-emerald-500 outline-none transition-colors text-white">
-                <input id="password" type="password" placeholder="Hasło" class="w-full p-4 bg-zinc-900 border border-zinc-800 rounded-xl focus:border-emerald-500 outline-none transition-colors text-white">
-                <button onclick="handleAuth('login')" class="w-full py-4 mt-2 bg-emerald-500 text-black font-black rounded-xl hover:bg-emerald-400 transition-colors shadow-[0_4px_20px_rgba(16,185,129,0.2)]">ZALOGUJ SIĘ</button>
-                <button onclick="handleAuth('signup')" class="w-full py-4 text-zinc-500 font-bold hover:text-white transition-colors">UTWÓRZ KONTO</button>
+                <input id="email" type="email" placeholder="Adres e-mail" class="w-full p-4 bg-zinc-900 border border-zinc-800 rounded-xl focus:border-emerald-500 outline-none text-white">
+                <input id="password" type="password" placeholder="Hasło" class="w-full p-4 bg-zinc-900 border border-zinc-800 rounded-xl focus:border-emerald-500 outline-none text-white">
+                <button onclick="handleAuth('login')" class="w-full py-4 bg-emerald-500 text-black font-black rounded-xl">ZALOGUJ SIĘ</button>
+                <button onclick="handleAuth('signup')" class="w-full py-4 text-zinc-500 font-bold hover:text-white">UTWÓRZ KONTO</button>
             </div>
         </div>
 
-        <!-- EKRAN GŁÓWNY (ZAKŁADKI) -->
-        <div id="main-screen" class="hidden flex-1 flex flex-col pb-20">
+        <!-- EKRANY GŁÓWNE -->
+        <div id="main-screen" class="hidden flex-1 flex flex-col">
             
-            <!-- ZAKŁADKA 1: DASHBOARD -->
+            <!-- DASHBOARD -->
             <div id="content-dashboard" class="p-6 flex-1 flex flex-col">
-                <h3 id="greeting" class="text-zinc-500 text-sm font-bold mb-4">Witaj!</h3>
-                
-                <div class="bg-gradient-to-br from-zinc-900 to-zinc-950 p-6 rounded-3xl border border-zinc-800 text-center mb-6 shadow-xl relative overflow-hidden">
-                    <!-- Efekt tła -->
-                    <div class="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-2xl"></div>
-                    
-                    <p class="text-zinc-400 text-xs uppercase tracking-widest font-bold mb-2">Twój Portfel</p>
-                    <h2 id="balance-display" class="text-5xl font-black text-emerald-500 mb-1 transition-all">0.000 zł</h2>
-                    
-                    <!-- Pasek postępu -->
-                    <div class="mt-8 text-left">
-                        <div class="flex justify-between text-xs text-zinc-500 mb-2 font-bold">
-                            <span>Cel: Wypłata (5.00 zł)</span>
-                            <span id="progress-text" class="text-emerald-500">0%</span>
-                        </div>
-                        <div class="w-full bg-zinc-950 rounded-full h-3 border border-zinc-800 p-0.5">
-                            <div id="progress-bar" class="bg-emerald-500 h-full rounded-full shadow-[0_0_10px_rgba(16,185,129,0.5)]" style="width: 0%; transition: width 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);"></div>
-                        </div>
-                    </div>
+                <div class="bg-gradient-to-br from-zinc-900 to-zinc-950 p-6 rounded-3xl border border-zinc-800 text-center mb-4 relative overflow-hidden">
+                    <p class="text-zinc-400 text-xs font-bold uppercase mb-2">Twój Portfel</p>
+                    <h2 id="balance-display" class="text-5xl font-black text-emerald-500 mb-1">0.0000 zł</h2>
+                    <p class="text-xs text-zinc-500 mt-2">Liczba kliknięć: <span id="total-clicks-display" class="text-white font-bold">0</span></p>
                 </div>
 
-                <div class="flex justify-between text-xs text-zinc-500 px-2 mb-4 font-bold uppercase tracking-wider">
-                    <span>Kliknięcia w sesji:</span>
-                    <span id="session-clicks-display" class="text-white">0</span>
+                <!-- Przyciski akcji -->
+                <div class="grid grid-cols-2 gap-3 mb-6">
+                    <button id="daily-btn" onclick="claimDailyBonus()" class="p-3 bg-zinc-900 border border-emerald-500/30 rounded-xl flex flex-col items-center justify-center opacity-50 cursor-not-allowed transition-all">
+                        <span class="text-2xl mb-1">🎁</span>
+                        <span class="text-xs font-bold text-emerald-500">Bonus Dzienny</span>
+                        <span class="text-[9px] text-zinc-500 mt-1" id="daily-timer">Dostępny wkrótce</span>
+                    </button>
+                    <button id="turbo-btn" onclick="activateTurbo()" class="p-3 bg-zinc-900 border border-amber-500/30 rounded-xl flex flex-col items-center justify-center opacity-50 cursor-not-allowed transition-all">
+                        <span class="text-2xl mb-1">🔥</span>
+                        <span class="text-xs font-bold text-amber-500">Turbo x2</span>
+                        <span class="text-[9px] text-zinc-500 mt-1" id="turbo-timer">Odnawianie...</span>
+                    </button>
                 </div>
 
-                <button id="earn-btn" onclick="earnMoney()" class="w-full py-6 bg-emerald-500 text-black font-black text-xl rounded-2xl mb-8 shadow-[0_10px_30px_rgba(16,185,129,0.25)] hover:scale-[1.02] active:scale-95 transition-all flex justify-center items-center gap-2">
-                    <span>ZARÓB 0.0015 ZŁ</span>
+                <button id="earn-btn" onclick="earnMoney()" class="w-full py-8 bg-emerald-500 text-black font-black text-xl rounded-2xl shadow-[0_10px_30px_rgba(16,185,129,0.2)] active:scale-95 transition-all">
+                    ZARÓB <span class="global-price">0.001</span> ZŁ
                 </button>
-
-                <!-- Symulacja wypłat -->
-                <div class="mt-auto">
-                    <p class="text-[10px] text-zinc-500 font-bold uppercase tracking-widest mb-3">Ostatnie Wypłaty</p>
-                    <div class="space-y-2 text-sm">
-                        <div class="flex justify-between items-center p-3 bg-zinc-900/50 rounded-xl border border-zinc-800/50">
-                            <div class="flex items-center gap-2"><span class="text-lg">👤</span><span class="text-zinc-300 font-medium">Osoba prywatna</span></div>
-                            <span class="text-emerald-500 font-bold bg-emerald-500/10 px-2 py-1 rounded-md">5.00 zł</span>
-                        </div>
-                    </div>
-                </div>
             </div>
 
-            <!-- ZAKŁADKA 2: WYPŁATY -->
+            <!-- WYPŁATY -->
             <div id="content-payouts" class="hidden p-6 flex-1 flex flex-col">
-                <div class="mb-8">
-                    <h3 class="text-2xl font-black text-white tracking-tight">Zleć Wypłatę</h3>
-                    <p class="text-sm text-zinc-400 mt-2">Wypłaty realizujemy na konta PayPal. Minimum do wypłaty wynosi <span class="text-emerald-500 font-bold">5.00 zł</span>.</p>
-                </div>
-                
+                <h3 class="text-2xl font-black text-white mb-6">Wypłata</h3>
                 <div class="space-y-4">
-                    <div class="relative">
-                        <span class="absolute left-4 top-4 text-zinc-500">✉️</span>
-                        <input id="paypal-email" type="email" placeholder="Twój e-mail PayPal" class="w-full p-4 pl-12 bg-zinc-900 border border-zinc-800 rounded-xl focus:border-emerald-500 outline-none transition-colors text-white">
-                    </div>
-                    <button id="withdraw-btn" onclick="requestWithdrawal()" class="w-full py-5 bg-zinc-800 text-zinc-500 font-black rounded-xl cursor-not-allowed transition-colors tracking-widest" disabled>
+                    <select id="payout-method" class="w-full p-4 bg-zinc-900 border border-zinc-800 rounded-xl text-white outline-none">
+                        <option value="paypal">PayPal</option>
+                        <option value="roblox_10">Roblox Card - 10 PLN</option>
+                        <option value="roblox_20">Roblox Card - 20 PLN</option>
+                    </select>
+                    <input id="payout-address" type="text" placeholder="Adres e-mail (PayPal) / Kontakt" class="w-full p-4 bg-zinc-900 border border-zinc-800 rounded-xl text-white outline-none">
+                    <button id="withdraw-btn" onclick="requestWithdrawal()" class="w-full py-4 bg-zinc-800 text-zinc-500 font-black rounded-xl" disabled>
                         BRAK ŚRODKÓW
                     </button>
                 </div>
             </div>
 
-            <!-- ZAKŁADKA 3: SZALEŃSTWO (Strefa MultiTag) -->
+            <!-- SZALEŃSTWO (MultiTag) -->
             <div id="content-bonus" class="hidden p-6 flex-1 flex flex-col">
-                
-                <!-- Przycisk Ratunkowy / Czyszczenie reklam -->
-                <div class="flex justify-end mb-4">
-                    <button onclick="window.location.reload()" class="px-4 py-2 bg-red-500/10 text-red-500 text-[10px] font-black uppercase tracking-widest rounded-lg border border-red-500/20 hover:bg-red-500/20 active:scale-95 transition-all flex items-center gap-1">
-                        <span>✖</span> WYCZYŚĆ REKLAMY
-                    </button>
+                <div class="bg-amber-500/10 border border-amber-500/50 p-4 rounded-xl mb-6 text-center">
+                    <h3 class="text-amber-500 font-black">STREFA MULTITAG</h3>
+                    <p class="text-xs text-zinc-400 mt-1">Aktywny format reklamowy w tle.</p>
                 </div>
+                <button onclick="triggerMultiTagEarn()" class="flex-1 bg-zinc-900 border-2 border-dashed border-zinc-800 rounded-[2rem] flex flex-col items-center justify-center p-8 active:scale-95 transition-transform">
+                    <span class="text-6xl mb-4">🚀</span>
+                    <h4 class="font-black text-2xl text-white">KLIKAJ BEZ LIMITU</h4>
+                    <span class="mt-4 px-4 py-2 bg-black rounded-full text-emerald-500 font-bold">+ <span class="global-price">0.001</span> ZŁ</span>
+                </button>
+            </div>
 
-                <div class="bg-gradient-to-r from-emerald-500/10 to-transparent border-l-4 border-emerald-500 p-4 rounded-r-xl mb-6">
-                    <h3 class="text-emerald-500 font-black text-lg">STREFA SZLEŃSTWA REKLAM I MULTI-ZAROBKU</h3>
-                    <p class="text-[11px] text-zinc-400 mt-1 uppercase font-bold tracking-wider">Uwaga: Włączono formaty reklamowe w tle.</p>
+            <!-- RANKING -->
+            <div id="content-leaderboard" class="hidden p-6 flex-1 flex flex-col">
+                <h3 class="text-2xl font-black text-white mb-4">Top 10 Graczy</h3>
+                <div id="leaderboard-list" class="space-y-2">Ładowanie...</div>
+            </div>
+
+            <!-- POLECENI -->
+            <div id="content-referrals" class="hidden p-6 flex-1 flex flex-col">
+                <h3 class="text-2xl font-black text-white mb-4">Zaproś i zarabiaj</h3>
+                <div class="bg-zinc-900 p-4 rounded-xl mb-4 border border-zinc-800 text-center">
+                    <p class="text-xs text-zinc-400 mb-2 uppercase font-bold">Twój Link Polecający</p>
+                    <input type="text" id="ref-link" readonly class="w-full bg-black text-emerald-500 font-bold p-3 rounded-lg text-center text-sm border border-zinc-800 mb-3">
+                    <button onclick="copyRef()" class="px-6 py-2 bg-zinc-800 text-white text-xs font-bold rounded-full">Kopiuj Link</button>
                 </div>
-
-                <div onclick="triggerMultiTagEarn()" class="flex-1 bg-zinc-900 border-2 border-dashed border-zinc-800/80 rounded-[2rem] flex flex-col items-center justify-center p-8 text-center cursor-pointer hover:border-emerald-500/50 transition-all group active:scale-95 relative overflow-hidden">
-                    <div class="w-24 h-24 bg-emerald-500 rounded-full flex items-center justify-center mb-6 group-hover:scale-110 transition-transform shadow-[0_0_40px_rgba(16,185,129,0.3)] z-10">
-                        <span class="text-4xl">🚀</span>
-                    </div>
-                    <h4 class="font-black text-2xl mb-2 text-white uppercase tracking-tighter z-10">ZARABIAJ</h4>
-                    <p class="text-zinc-400 text-sm max-w-[200px] mx-auto mb-6 z-10">Klikaj bez limitu. Każde kliknięcie generuje zysk i uruchamia reklamy.</p>
-                    
-                    <div class="px-6 py-3 bg-black border border-emerald-500/30 rounded-full text-emerald-500 text-sm font-black uppercase tracking-widest shadow-inner z-10">
-                        + 0.0015 PLN / KLIK
-                    </div>
+                <p class="text-xs text-zinc-500">Otrzymasz 10% od zarobków osób, które zarejestrują się z tego linku.</p>
+                <div class="mt-6">
+                    <h4 class="text-sm font-bold text-white mb-2">Twoi Poleceni:</h4>
+                    <div id="referrals-list" class="space-y-2 text-sm text-zinc-400">Ładowanie...</div>
                 </div>
             </div>
 
-            <!-- ZAKŁADKA 4: HISTORIA -->
-            <div id="content-history" class="hidden p-6 flex-1 flex flex-col">
-                <h3 class="text-2xl font-black mb-6 text-white tracking-tight">Historia Transakcji</h3>
-                <div id="history-list" class="space-y-3 overflow-y-auto max-h-[60vh] pr-2 custom-scrollbar">
-                    <p class="text-zinc-500 text-sm font-medium">Pobieranie danych z serwera...</p>
+            <!-- PANEL ADMINA -->
+            <div id="content-admin" class="hidden p-6 flex-1 flex flex-col">
+                <h3 class="text-2xl font-black text-red-500 mb-4">Panel Admina</h3>
+                <div class="bg-zinc-900 p-4 rounded-xl border border-red-500/30">
+                    <p class="text-zinc-400 text-sm">Zlecone wypłaty pojawią się w bazie danych Supabase. Ten panel posłuży do statystyk platformy.</p>
                 </div>
             </div>
 
-            <!-- ZAKŁADKA 5: ZASADY -->
-            <div id="content-rules" class="hidden p-6 flex-1 flex flex-col">
-                <h3 class="text-2xl font-black mb-6 text-white tracking-tight">Zasady & Pomoc</h3>
-                <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 mb-8">
-                    <ul class="text-sm text-zinc-400 space-y-4 font-medium">
-                        <li class="flex gap-3"><span class="text-emerald-500">✓</span> <span>Jedno kliknięcie to zarobek <strong class="text-white">0.0015 zł</strong>.</span></li>
-                        <li class="flex gap-3"><span class="text-red-500">✖</span> <span>Używanie botów, auto-klikerów lub VPN grozi blokadą konta.</span></li>
-                        <li class="flex gap-3"><span class="text-emerald-500">✓</span> <span>Wypłaty zatwierdzane są ręcznie w ciągu 48 godzin.</span></li>
-                        <li class="flex gap-3"><span class="text-red-500">✖</span> <span>Korzystanie z AdBlocka blokuje możliwość zarabiania.</span></li>
-                    </ul>
-                </div>
-                <div class="p-5 bg-zinc-900 rounded-2xl border border-zinc-800 text-center flex flex-col items-center">
-                    <div class="w-12 h-12 bg-blue-500/10 text-blue-500 rounded-full flex items-center justify-center text-xl mb-3">💬</div>
-                    <p class="text-xs text-zinc-500 uppercase font-bold tracking-widest mb-2">Kontakt z administracją</p>
-                    <a href="https://t.me/rejson67" target="_blank" class="text-white font-black hover:text-emerald-500 transition-colors">Telegram: @rejson67</a>
-                </div>
-                
-                <button onclick="logout()" class="mt-auto py-4 text-zinc-500 text-sm font-black uppercase tracking-widest hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-all">Wyloguj się</button>
+            <div class="mt-auto p-6 flex justify-center">
+                <button onclick="logout()" class="text-xs text-zinc-600 font-bold uppercase hover:text-red-500">Wyloguj się</button>
             </div>
-
-            <!-- NAWIGACJA (DOLNY PASEK) -->
-            <nav class="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-zinc-950/90 backdrop-blur-lg border-t border-zinc-900 flex text-[10px] font-bold text-zinc-500 uppercase tracking-wider px-2 py-3 pb-safe z-50">
-                <button onclick="switchTab('dashboard')" id="tab-dashboard" class="tab-btn active flex-1 flex flex-col items-center gap-1 py-1 hover:text-white transition-colors">
-                    <span class="text-xl">💰</span>Zarobki
-                </button>
-                <button onclick="switchTab('payouts')" id="tab-payouts" class="tab-btn flex-1 flex flex-col items-center gap-1 py-1 hover:text-white transition-colors">
-                    <span class="text-xl">💳</span>Wypłata
-                </button>
-                <button onclick="switchTab('bonus')" id="tab-bonus" class="tab-btn flex-1 flex flex-col items-center gap-1 py-1 hover:text-white transition-colors">
-                    <span class="text-xl">⚠️</span>Szaleństwo
-                </button>
-                <button onclick="switchTab('history')" id="tab-history" class="tab-btn flex-1 flex flex-col items-center gap-1 py-1 hover:text-white transition-colors">
-                    <span class="text-xl">📜</span>Historia
-                </button>
-                <button onclick="switchTab('rules')" id="tab-rules" class="tab-btn flex-1 flex flex-col items-center gap-1 py-1 hover:text-white transition-colors">
-                    <span class="text-xl">ℹ️</span>Zasady
-                </button>
-            </nav>
-
         </div>
+
+        <!-- NAWIGACJA (Przewijana poziomo) -->
+        <nav id="bottom-nav" class="hidden fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-zinc-950 border-t border-zinc-900 z-50 overflow-x-auto no-scrollbar">
+            <div class="flex text-[10px] font-bold text-zinc-500 uppercase px-2 py-3 min-w-max w-full justify-between">
+                <button onclick="switchTab('dashboard')" id="tab-dashboard" class="tab-btn active flex flex-col items-center gap-1 px-4"><span class="text-xl">💰</span>Pulpit</button>
+                <button onclick="switchTab('bonus')" id="tab-bonus" class="tab-btn flex flex-col items-center gap-1 px-4"><span class="text-xl">🚀</span>MultiTag</button>
+                <button onclick="switchTab('leaderboard')" id="tab-leaderboard" class="tab-btn flex flex-col items-center gap-1 px-4"><span class="text-xl">🏆</span>Ranking</button>
+                <button onclick="switchTab('referrals')" id="tab-referrals" class="tab-btn flex flex-col items-center gap-1 px-4"><span class="text-xl">👥</span>Poleceni</button>
+                <button onclick="switchTab('payouts')" id="tab-payouts" class="tab-btn flex flex-col items-center gap-1 px-4"><span class="text-xl">💳</span>Wypłata</button>
+                <button onclick="switchTab('admin')" id="tab-admin" class="hidden tab-btn flex flex-col items-center gap-1 px-4"><span class="text-xl text-red-500">⚙️</span>Admin</button>
+            </div>
+        </nav>
     </div>
 
     <script>
-        // === TWOJE DANE ===
+        // ==========================================
+        // === CENTRUM DOWODZENIA ZMIENNYMI (V3) ===
+        // ==========================================
         const SB_URL = "https://xvsmrftetmqdcdkfnkjq.supabase.co";
         const SB_KEY = "sb_publishable_N48aV0Se_Q4RIKzSCAxDJw_9f8y9x12";
-        const MONETAG_LINK = "https://omg10.com/4/10822851";
-        // ==================
+        
+        // Zmień te wartości, a zaktualizują się w całym kodzie
+        const CLICK_VALUE = 0.001;        // Kwota za jedno standardowe kliknięcie w PLN
+        const DAILY_BONUS_VALUE = 0.01;   // Sztywny bonus za codzienne logowanie
+        const MIN_PAYOUT = 5.00;          // Minimum do wypłaty
+        
+        // Format Reklam (Podmień własne)
+        const DIRECT_LINK = "https://omg10.com/4/10825918"; 
+        
+        // Szanse na Jackpot (np. 0.01 to 1% szans na uderzenie x10)
+        const LUCKY_CHANCE = 0.02; 
+        const LUCKY_MULTIPLIER = 10;
+        // ==========================================
 
         const sb = supabase.createClient(SB_URL, SB_KEY);
         let currentBalance = 0;
+        let totalUserClicks = 0;
         let isWaiting = false;
-        let sessionClicks = 0;
-        let multiTagLoaded = false;
+        let turboActive = false;
+        let myProfile = null;
+        let multiTagScriptAdded = false;
 
-        // Ustawienie powitania w zależności od czasu
-        const hour = new Date().getHours();
-        let greetingText = "Witaj!";
-        if (hour < 5 || hour >= 20) greetingText = "Dobrej nocy!";
-        else if (hour < 12) greetingText = "Dzień dobry!";
-        else if (hour < 18) greetingText = "Miłego popołudnia!";
-        else greetingText = "Dobry wieczór!";
-        document.getElementById('greeting').innerText = greetingText;
+        // Dźwięk monety (syntetyzator)
+        function playCoinSound() {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain); gain.connect(ctx.destination);
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(1000, ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(1500, ctx.currentTime + 0.1);
+                gain.gain.setValueAtTime(0.1, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
+                osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.1);
+            } catch(e) {}
+        }
 
-        // 1. Sprawdzanie AdBlocka
-        setTimeout(() => {
-            const testAd = document.getElementById('test-ad');
-            if(testAd.offsetHeight === 0 || window.getComputedStyle(testAd).display === 'none') {
-                document.getElementById('adblock-screen').classList.remove('hidden');
-            }
-        }, 500);
+        // Animacja cyferek
+        function animateBalance(start, end) {
+            const display = document.getElementById('balance-display');
+            const duration = 500; const steps = 20; const stepTime = duration / steps;
+            let current = start; const increment = (end - start) / steps;
+            const timer = setInterval(() => {
+                current += increment;
+                display.innerText = current.toFixed(4) + " zł";
+                if(Math.abs(end - current) < Math.abs(increment)) {
+                    display.innerText = end.toFixed(4) + " zł";
+                    clearInterval(timer);
+                }
+            }, stepTime);
+        }
 
-        // 2. Autoryzacja
+        // Ukrywanie emaila
+        function maskEmail(email) {
+            if(!email) return "Anonim";
+            const parts = email.split('@');
+            if(parts[0].length <= 2) return email;
+            return parts[0][0] + '***' + parts[0].slice(-1) + '@' + parts[1];
+        }
+
+        // Zmiana tekstów globalnie na start
+        document.querySelectorAll('.global-price').forEach(el => el.innerText = CLICK_VALUE);
+
+        // Obsługa Reflinka
+        const urlParams = new URLSearchParams(window.location.search);
+        const refCode = urlParams.get('ref');
+        if(refCode) localStorage.setItem('invited_by', refCode);
+
+        // === AUTORYZACJA ===
         async function handleAuth(type) {
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
             if(!email || !password) return showToast("Wpisz dane!", "error", "⚠️");
 
-            let res = type === 'login' 
-                ? await sb.auth.signInWithPassword({ email, password })
-                : await sb.auth.signUp({ email, password });
+            let res;
+            if(type === 'login') {
+                res = await sb.auth.signInWithPassword({ email, password });
+            } else {
+                res = await sb.auth.signUp({ email, password });
+                if(!res.error && res.data.user) {
+                    // Generowanie kodu i przypisanie profilu
+                    let newRefCode = Math.random().toString(36).substring(2, 10);
+                    let inviterId = null;
+                    const savedRef = localStorage.getItem('invited_by');
+                    if(savedRef) {
+                        const {data: inv} = await sb.from('profiles').select('id').eq('referral_code', savedRef).single();
+                        if(inv) inviterId = inv.id;
+                    }
+                    // Upsert profilu
+                    await sb.from('profiles').upsert({ 
+                        id: res.data.user.id, email: email, referral_code: newRefCode, referred_by: inviterId 
+                    });
+                }
+            }
 
             if (res.error) showToast(res.error.message, "error", "✖");
             else checkSession();
@@ -266,168 +283,195 @@
             if (session) {
                 document.getElementById('auth-screen').style.display = 'none';
                 document.getElementById('main-screen').style.display = 'flex';
-                updateUI(session.user.id);
+                document.getElementById('bottom-nav').style.display = 'block';
+                document.getElementById('user-level-badge').style.display = 'flex';
+                fetchProfile(session.user.id);
             }
         }
 
-        // 3. Aktualizacja Interfejsu (Punkty na PLN)
-        async function updateUI(userId) {
-            const { data } = await sb.from('profiles').select('points').eq('id', userId).single();
-            const points = data ? data.points : 0;
-            currentBalance = points * 0.0015;
+        // === LOGIKA PROFILU ===
+        async function fetchProfile(userId) {
+            const { data } = await sb.from('profiles').select('*').eq('id', userId).single();
+            if(!data) return;
+            myProfile = data;
             
-            // Formatowanie np. 1.250 zł
-            const formatted = currentBalance.toFixed(4) + " zł";
-            document.getElementById('balance-display').innerText = formatted;
-            document.getElementById('session-clicks-display').innerText = sessionClicks;
+            const oldBalance = currentBalance;
+            currentBalance = data.points * CLICK_VALUE;
+            totalUserClicks = data.total_clicks || 0;
+            
+            // Animacja jeśli saldo się zmieniło
+            if(oldBalance !== currentBalance) animateBalance(oldBalance, currentBalance);
+            else document.getElementById('balance-display').innerText = currentBalance.toFixed(4) + " zł";
+            
+            document.getElementById('total-clicks-display').innerText = totalUserClicks;
 
-            // Pasek postępu
-            let percent = Math.min((currentBalance / 5.0) * 100, 100).toFixed(0);
-            document.getElementById('progress-bar').style.width = percent + "%";
-            document.getElementById('progress-text').innerText = percent + "%";
+            // Obliczanie Poziomu wizualnego
+            const level = Math.floor(totalUserClicks / 100) + 1;
+            document.getElementById('display-level').innerText = level;
 
             // Przycisk wypłaty
             const withdrawBtn = document.getElementById('withdraw-btn');
-            if(currentBalance >= 5.0) {
-                withdrawBtn.disabled = false;
-                withdrawBtn.innerText = "ZLEĆ WYPŁATĘ TERAZ";
-                withdrawBtn.classList.replace('bg-zinc-800', 'bg-emerald-500');
-                withdrawBtn.classList.replace('text-zinc-500', 'text-black');
+            if(currentBalance >= MIN_PAYOUT) {
+                withdrawBtn.disabled = false; withdrawBtn.innerText = "ZLEĆ WYPŁATĘ";
+                withdrawBtn.classList.replace('bg-zinc-800', 'bg-emerald-500'); withdrawBtn.classList.replace('text-zinc-500', 'text-black');
+            }
+
+            // Link Polecający
+            document.getElementById('ref-link').value = window.location.origin + window.location.pathname + "?ref=" + data.referral_code;
+
+            // Admin tab
+            if(data.role === 'admin') document.getElementById('tab-admin').classList.remove('hidden');
+
+            checkTimers();
+        }
+
+        // === TIMERY I BONUSY ===
+        function checkTimers() {
+            const now = new Date();
+            // Daily Bonus
+            const btnDaily = document.getElementById('daily-btn');
+            const dailyText = document.getElementById('daily-timer');
+            if(!myProfile.last_daily_bonus || (now - new Date(myProfile.last_daily_bonus)) > 86400000) {
+                btnDaily.classList.remove('opacity-50', 'cursor-not-allowed');
+                btnDaily.classList.add('border-emerald-500', 'shadow-[0_0_15px_rgba(16,185,129,0.3)]', 'active:scale-95');
+                dailyText.innerText = "KLIKNIJ ABY ODEBRAĆ";
+            }
+
+            // Turbo
+            const btnTurbo = document.getElementById('turbo-btn');
+            const turboText = document.getElementById('turbo-timer');
+            if(!myProfile.last_turbo || (now - new Date(myProfile.last_turbo)) > 86400000) {
+                btnTurbo.classList.remove('opacity-50', 'cursor-not-allowed');
+                btnTurbo.classList.add('border-amber-500', 'shadow-[0_0_15px_rgba(245,158,11,0.3)]', 'active:scale-95');
+                turboText.innerText = "GOTOWE DO UŻYCIA";
             }
         }
 
-        // 4. Zarabianie standardowe (SmartLink)
+        async function claimDailyBonus() {
+            if(document.getElementById('daily-btn').classList.contains('opacity-50')) return;
+            const pts = DAILY_BONUS_VALUE / CLICK_VALUE; // Przeliczenie kwoty na punkty bazy
+            await updatePointsAndClicks(pts, 0);
+            await sb.from('profiles').update({ last_daily_bonus: new Date().toISOString() }).eq('id', myProfile.id);
+            showToast(`Odebrano ${DAILY_BONUS_VALUE} zł!`, "success", "🎁");
+            fetchProfile(myProfile.id);
+        }
+
+        async function activateTurbo() {
+            if(document.getElementById('turbo-btn').classList.contains('opacity-50')) return;
+            turboActive = true;
+            await sb.from('profiles').update({ last_turbo: new Date().toISOString() }).eq('id', myProfile.id);
+            showToast("Tryb TURBO aktywny na 2 minuty!", "turbo", "🔥");
+            fetchProfile(myProfile.id);
+            
+            setTimeout(() => { 
+                turboActive = false; 
+                showToast("Tryb TURBO zakończony", "info", "⏱️");
+            }, 120000); // 2 minuty
+        }
+
+        // === MECHANIKA ZARABIANIA ===
+        async function updatePointsAndClicks(pointsToAdd, clicksToAdd) {
+            if(!myProfile) return;
+            
+            // Zwiększamy punkty userowi
+            const newPoints = myProfile.points + pointsToAdd;
+            const newClicks = (myProfile.total_clicks || 0) + clicksToAdd;
+            await sb.from('profiles').update({ points: newPoints, total_clicks: newClicks }).eq('id', myProfile.id);
+            
+            // Prowizja dla polecającego (10%)
+            if(pointsToAdd > 0 && myProfile.referred_by) {
+                const {data: refData} = await sb.from('profiles').select('points').eq('id', myProfile.referred_by).single();
+                if(refData) {
+                    await sb.from('profiles').update({ points: refData.points + (pointsToAdd * 0.1) }).eq('id', myProfile.referred_by);
+                }
+            }
+            playCoinSound();
+        }
+
         async function earnMoney() {
             if (isWaiting) return;
+            window.open(DIRECT_LINK, '_blank');
 
-            // Anty-bot co 50 kliknięć
-            if (sessionClicks > 0 && sessionClicks % 50 === 0) {
-                const num1 = Math.floor(Math.random() * 10);
-                const num2 = Math.floor(Math.random() * 10);
-                const ans = prompt(`Zabezpieczenie przed botami: Ile to ${num1} + ${num2}?`);
-                if (parseInt(ans) !== (num1 + num2)) {
-                    showToast("Błędna odpowiedź!", "error", "🤖");
-                    return;
-                }
+            let earnedPoints = 1; // Podstawa (1 klik = A)
+            if(turboActive) earnedPoints *= 2;
+            
+            // Lucky Click
+            if(Math.random() < LUCKY_CHANCE) {
+                earnedPoints *= LUCKY_MULTIPLIER;
+                showToast(`JACKPOT! x${LUCKY_MULTIPLIER}`, "turbo", "🎰");
+            } else {
+                showToast(`+ ${(earnedPoints * CLICK_VALUE).toFixed(4)} zł`, "success", "💸");
             }
 
-            const { data: { user } } = await sb.auth.getUser();
-            if (!user) return;
-
-            window.open(MONETAG_LINK, '_blank');
-            sessionClicks++;
-
-            // Cooldown 15s
+            await updatePointsAndClicks(earnedPoints, 1);
+            
             const btn = document.getElementById('earn-btn');
-            isWaiting = true;
-            let timeLeft = 15;
-
+            isWaiting = true; let timeLeft = 10;
             const timer = setInterval(() => {
                 btn.innerHTML = `<span class="opacity-50">⏳</span> ODCZEKAJ ${timeLeft}s`;
-                btn.classList.replace('bg-emerald-500', 'bg-zinc-800');
-                btn.classList.replace('text-black', 'text-zinc-500');
-                btn.classList.remove('shadow-[0_10px_30px_rgba(16,185,129,0.25)]');
+                btn.classList.replace('bg-emerald-500', 'bg-zinc-800'); btn.classList.replace('text-black', 'text-zinc-500');
                 timeLeft--;
-
                 if (timeLeft < 0) {
-                    clearInterval(timer);
-                    isWaiting = false;
-                    btn.innerHTML = `<span>ZARÓB 0.0015 ZŁ</span>`;
-                    btn.classList.replace('bg-zinc-800', 'bg-emerald-500');
-                    btn.classList.replace('text-zinc-500', 'text-black');
-                    btn.classList.add('shadow-[0_10px_30px_rgba(16,185,129,0.25)]');
+                    clearInterval(timer); isWaiting = false;
+                    btn.innerHTML = `ZARÓB <span class="global-price">${CLICK_VALUE}</span> ZŁ`;
+                    btn.classList.replace('bg-zinc-800', 'bg-emerald-500'); btn.classList.replace('text-zinc-500', 'text-black');
                 }
             }, 1000);
-
-            // Zapis w bazie
-            const { data } = await sb.from('profiles').select('points').eq('id', user.id).single();
-            await sb.from('profiles').update({ points: (data ? data.points : 0) + 1 }).eq('id', user.id);
-            await sb.from('transactions').insert([{ user_id: user.id, amount: 0.002, type: 'earn' }]);
             
-            showToast("+ 0.0015 zł", "success", "💸");
-            updateUI(user.id);
+            fetchProfile(myProfile.id);
         }
 
-        // 5. Zarabianie MultiTag (Zakładka Bonus)
+        // Szaleństwo (MultiTag)
         async function triggerMultiTagEarn() {
-            const { data: { user } } = await sb.auth.getUser();
-            if (!user) return;
-
-            sessionClicks++;
-            
-            const { data } = await sb.from('profiles').select('points').eq('id', user.id).single();
-            const nextPoints = (data ? data.points : 0) + 1;
-
-            await sb.from('profiles').update({ points: nextPoints }).eq('id', user.id);
-            await sb.from('transactions').insert([{ user_id: user.id, amount: 0.002, type: 'bonus-multitag' }]);
-            
-            showToast("+ 0.0015 zł", "success", "🚀");
-            updateUI(user.id);
+            let earnedPoints = turboActive ? 2 : 1;
+            showToast(`+ ${(earnedPoints * CLICK_VALUE).toFixed(4)} zł`, "success", "🚀");
+            await updatePointsAndClicks(earnedPoints, 1);
+            fetchProfile(myProfile.id);
         }
 
-        // 6. Wypłata
-        async function requestWithdrawal() {
-            const email = document.getElementById('paypal-email').value;
-            if(!email.includes('@')) return showToast("Błędny adres e-mail!", "error", "⚠️");
+        // === RANKING & POLECENI ===
+        async function loadLeaderboard() {
+            const list = document.getElementById('leaderboard-list');
+            list.innerHTML = 'Ładowanie...';
+            const { data } = await sb.from('profiles').select('email, total_clicks, points').order('points', { ascending: false }).limit(10);
             
-            const { data: { user } } = await sb.auth.getUser();
-            
-            await sb.from('withdrawals').insert([{ 
-                user_id: user.id, 
-                amount: currentBalance, 
-                paypal_email: email 
-            }]);
-            
-            // Zerowanie konta
-            await sb.from('profiles').update({ points: 0 }).eq('id', user.id);
-            await sb.from('transactions').insert([{ user_id: user.id, amount: -currentBalance, type: 'withdraw' }]);
-            
-            showToast("Wypłata zlecona!", "success", "✅");
-            document.getElementById('paypal-email').value = '';
-            updateUI(user.id);
-        }
-
-        // 7. Pobieranie historii
-        async function loadHistory() {
-            const list = document.getElementById('history-list');
-            list.innerHTML = '<p class="text-zinc-500 text-sm animate-pulse">Ładowanie danych z serwera...</p>';
-            
-            const { data: { user } } = await sb.auth.getUser();
-            const { data } = await sb.from('transactions')
-                                   .select('*')
-                                   .eq('user_id', user.id)
-                                   .order('created_at', { ascending: false })
-                                   .limit(30);
-            
+            if(!data) { list.innerHTML = 'Błąd pobierania'; return; }
             list.innerHTML = '';
-            if(data.length === 0) list.innerHTML = '<div class="text-center py-10"><p class="text-4xl mb-2">📭</p><p class="text-zinc-500 text-sm">Brak transakcji.</p></div>';
-            
-            data.forEach(t => {
-                const isEarn = t.type.includes('earn') || t.type.includes('bonus');
-                const isBonus = t.type.includes('bonus');
-                const date = new Date(t.created_at).toLocaleString('pl-PL', {hour: '2-digit', minute:'2-digit', day:'2-digit', month:'2-digit'});
-                
-                let icon = isEarn ? (isBonus ? '⚡' : '💰') : '💳';
-                let title = isEarn ? (isBonus ? 'Bonus MultiTag' : 'Reklama SmartLink') : 'Wypłata środków';
-                let colorClass = isEarn ? 'text-emerald-500' : 'text-zinc-400';
-                
+            data.forEach((p, index) => {
+                let badge = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index+1}.`;
                 list.innerHTML += `
-                    <div class="flex justify-between items-center p-4 bg-zinc-900/50 rounded-xl border border-zinc-800/50 hover:bg-zinc-900 transition-colors">
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 bg-zinc-950 rounded-full flex items-center justify-center text-lg border border-zinc-800">${icon}</div>
-                            <div>
-                                <p class="text-sm text-zinc-300 font-bold tracking-wide">${title}</p>
-                                <p class="text-xs text-zinc-600">${date}</p>
-                            </div>
+                <div class="flex justify-between items-center bg-zinc-900 p-3 rounded-xl border border-zinc-800">
+                    <div class="flex items-center gap-3">
+                        <span class="font-black text-zinc-500 w-6 text-center">${badge}</span>
+                        <div>
+                            <p class="text-sm font-bold text-white">${maskEmail(p.email)}</p>
+                            <p class="text-[10px] text-zinc-500">Poziom: ${Math.floor((p.total_clicks||0)/100)+1}</p>
                         </div>
-                        <span class="font-black ${colorClass} tracking-wider">
-                            ${isEarn ? '+' : '-'}${Math.abs(t.amount).toFixed(3)} zł
-                        </span>
-                    </div>`;
+                    </div>
+                    <span class="text-emerald-500 font-bold">${(p.points * CLICK_VALUE).toFixed(2)} zł</span>
+                </div>`;
             });
         }
 
-        // System Nawigacji i Inteligentne Ładowanie MultiTag
+        async function loadReferrals() {
+            if(!myProfile) return;
+            const list = document.getElementById('referrals-list');
+            const { data } = await sb.from('profiles').select('email, total_clicks').eq('referred_by', myProfile.id);
+            
+            if(!data || data.length === 0) { list.innerHTML = 'Jeszcze nikogo nie zaprosiłeś.'; return; }
+            list.innerHTML = '';
+            data.forEach(p => {
+                list.innerHTML += `<div class="bg-zinc-900 p-2 rounded text-xs border border-zinc-800 flex justify-between"><span>${maskEmail(p.email)}</span> <span class="text-emerald-500">${p.total_clicks||0} klików</span></div>`;
+            });
+        }
+
+        function copyRef() {
+            const copyText = document.getElementById("ref-link");
+            copyText.select(); document.execCommand("copy");
+            showToast("Skopiowano link!", "info", "📋");
+        }
+
+        // === SYSTEM NAWIGACJI ===
         function switchTab(tabId) {
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             document.getElementById('tab-' + tabId).classList.add('active');
@@ -435,43 +479,33 @@
             document.querySelectorAll('[id^="content-"]').forEach(c => c.classList.add('hidden'));
             document.getElementById('content-' + tabId).classList.remove('hidden');
 
-            if(tabId === 'history') loadHistory();
+            if(tabId === 'leaderboard') loadLeaderboard();
+            if(tabId === 'referrals') loadReferrals();
 
-            // Ładowanie potwora "MultiTag" tylko w zakładce Bonus
-            if (tabId === 'bonus' && !multiTagLoaded) {
+            // Ładowanie skryptu MultiTag tylko jak user wejdzie do Szaleństwa
+            if (tabId === 'bonus' && !multiTagScriptAdded) {
                 const script = document.createElement('script');
                 script.src = "https://quge5.com/88/tag.min.js";
-                script.setAttribute('data-zone', '225950');
-                script.async = true;
-                script.setAttribute('data-cfasync', 'false');
+                script.setAttribute('data-zone', '226112');
+                script.async = true; script.setAttribute('data-cfasync', 'false');
                 document.body.appendChild(script);
-                multiTagLoaded = true;
-                
-                showToast("System reklam w tle aktywny", "info", "⚙️");
+                multiTagScriptAdded = true;
             }
         }
 
-        // Zaawansowany Toast
-        function showToast(text, type = 'success', icon = '💸') {
+        function showToast(text, type = 'success', icon = '') {
             const toast = document.getElementById('toast');
-            const iconEl = document.getElementById('toast-icon');
-            const textEl = document.getElementById('toast-text');
-            
-            toast.className = 'toast'; // reset
+            toast.className = 'toast';
             if(type === 'error') toast.classList.add('error');
             if(type === 'info') toast.classList.add('info');
-            
-            iconEl.innerText = icon;
-            textEl.innerText = text;
-            
+            if(type === 'turbo') toast.classList.add('turbo');
+            document.getElementById('toast-icon').innerText = icon;
+            document.getElementById('toast-text').innerText = text;
             toast.classList.add('show');
             setTimeout(() => toast.classList.remove('show'), 3000);
         }
 
-        async function logout() {
-            await sb.auth.signOut();
-            window.location.reload();
-        }
+        async function logout() { await sb.auth.signOut(); window.location.reload(); }
 
         checkSession();
     </script>
